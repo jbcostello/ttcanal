@@ -1,7 +1,5 @@
 import numpy as np
 import interactivePG as pg
-# import matplotlib
-# matplotlib.use("Agg")
 import matplotlib.pylab as plt
 import glob
 import os
@@ -110,12 +108,8 @@ def sdmap(file,sdrange,sdstep=1,title1 = ' ',title2 = ' ',Verbose = False,Plot =
 		plt.show()
 
 
-	mean = np.mean(avgdat)
-	std = np.std(avgdat)
 
 	for k in sdrange:
-		for i in np.arange(len(avgdat[0,:])):
-			for j in np.arange(len(avgdat[:,0])):
 				if avgdat[j,i] > mean+k*std: 
 					# This if statement controls what makes a detection, can also add other if statments to include other things like below standard deviation etc.
 					detect[j,i] += sdstep
