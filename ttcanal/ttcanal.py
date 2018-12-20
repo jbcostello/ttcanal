@@ -67,23 +67,19 @@ def animate(file,title = ' ',time = 200,Verbose = False):
 
 	return im_ani
 
-def sdmap(file,sdrange,sdstep=1,title1 = ' ',title2 = ' ',Verbose = False,Plot = True):
-	# Creates 2 pcolormeshs. One of the standard deviations and one of standard deviations above the mean. Takes average among frames and shows standard dev. 
-	# Returns 2 2x2 arrays of the values used to make the map. 1 is map of std values, 2 is map of std values above the mean in steps provided by sdrange
+def sdmap(file,sdrange,sdstep=1,title = ' ',Verbose = False,Plot = True):
+	# Creates a pcolormesh of the sd across frames 
+	# Returns a 2x2 array of the values used to make the map.
 	# 
 	# file: filename of raw data from camera (Str)
-	# sdrange: array of values of sd that will be used to detect. Ex: [1,2,3] will find all points above 1sd,2sd,3sd. [0.5,1.0,1.5,2.5] will find all points above 0.5 to 2.5 sd. (numpy array)
-	# sdstep: each step for a different level in the map. Defaults to one (Float)
-	# title1: Title of the std plot (Str)
-	# title2: Title of the std above average plot (Str)
+	# title: Title of the std plot (Str)
 	# Verbose: Provides additional info for debugging purposes (Boolean)
-	# Plot = Controls if produces plots, defealts true
+	# Plot = Controls if produces plots, defealts true (Boolean)
 
 	dat = getttcdata(file)
 	frames = getframes(file,Verbose) 
 	# Frames gives you the number of frames in the data file.
 
-	avgdat = np.zeros((64,80))
 	detect = np.zeros((64,80))
 
 	for framenum in np.arange(frames):
@@ -103,23 +99,42 @@ def sdmap(file,sdrange,sdstep=1,title1 = ' ',title2 = ' ',Verbose = False,Plot =
 
 	if Plot:
 		plt.pcolormesh(stddata)
-		plt.title(title1)
+		plt.title(title)
 		plt.colorbar()
 		plt.show()
 
+	return stddata
 
+def sdavgmap(file,sdrange,sdstep=1,title = ' ',Verbose = False,Plot = True):
+	# Creates a pcolormesh of the sd above average. This is computed by taking the average across frames, then finding the mean and std across pixels. The pixels that are above the mean, in steps determined by sdrange, are colored differently
+	# Returns a 2x2 array of the values used to make the map.
+	# 
+	# file: filename of raw data from camera (Str)
+	# sdrange: array of values of sd that will be used to detect. Ex: [1,2,3] will find all points above 1sd,2sd,3sd. [0.5,1.0,1.5,2.5] will find all points above 0.5 to 2.5 sd. (numpy array)
+	# sdstep: each step for a different level in the map. Defaults to one (Float)
+	# title: Title of the std plot (Str)
+	# Verbose: Provides additional info for debugging purposes (Boolean)
+	# Plot = Controls if produces plots, defealts true (Boolean)
+
+	dat = getttcdata(file)
+	frames = getframes(file,Verbose) 
+	# Frames gives you the number of frames in the data file.
+
+	detect = np.zeros((64,80))
 
 	for k in sdrange:
+		for i in np.arange(len(detect[0,:])):
+			for j in np.arange(len(detect[:,0])):
 				if avgdat[j,i] > mean+k*std: 
 					# This if statement controls what makes a detection, can also add other if statments to include other things like below standard deviation etc.
 					detect[j,i] += sdstep
 	if Plot:
 		plt.pcolormesh(detect)
-		plt.title(title2)
+		plt.title(title)
 		plt.colorbar()
 		plt.show()
 
-	return stddata, detect
+	return detect
 
 def avgmap(file,title = ' ',Verbose = False,Plot = True):
 	# Maps the average value across all frames on a pcolormap, and returns the average array
@@ -175,21 +190,6 @@ def rawmap(file,framelist = np.array([0]),title = ' ',Verbose = False,Plot = Tru
 
 	return shapelist
 
-
-
-fname = 'grid1hz.txt'
-frames = getframes(fname)
-
-# ani = animate(fname,time = 100,title = 'Looking for a Grid')
-# ani.save('grid.mp4')
-
-
-
-sdmap(fname,sdrange = np.arange(0.5,4,0.5),sdstep = 0.5,title1='$\sigma$ Across Frames Looking for Grid',title2='$\sigma$ Above Mean Looking for Grid')
-# avgmap(fname)
-
-# frlist = np.arange(0,frames,20)
-# rawmap(fname,frlist)
 
 
 
