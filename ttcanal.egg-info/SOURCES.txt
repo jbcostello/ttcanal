@@ -1,0 +1,5 @@
+setup.py
+ttcanal.egg-info/PKG-INFO
+ttcanal.egg-info/SOURCES.txt
+ttcanal.egg-info/dependency_links.txt
+ttcanal.egg-info/not-zip-safe
