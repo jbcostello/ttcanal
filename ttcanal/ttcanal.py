@@ -181,7 +181,6 @@ class ttc(object):
 		# Verbose: provides additional information if set to true, defaults to false (Boolean)
 		# Plot: creates plots of raw data when set to true, defaults to true (Boolean)
 
-def avgmap(file,title = ' ',Verbose = False,Plot = True):
 		dat = self.dat
 		frames = self.frames
 		# Frames gives you the number of frames in the data file.
