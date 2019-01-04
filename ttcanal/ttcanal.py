@@ -44,6 +44,10 @@ class ttc(object):
 		# Verbose: Boolean for providing extra information
 		# At the moment Verbose just tells you number of frames, but could add more in the future
 
+		# To save an animation, do 
+		# ani = ttc.animate()
+		# ani.save('name.mp4')
+
 		dat = self.dat
 		frames = self.frames
 
