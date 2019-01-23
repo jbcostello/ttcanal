@@ -20,6 +20,11 @@ class ttc(object):
 		# Turns raw data file into array of unsized frames, and creates an attribute for number of frames in a given frame.
 		# 
 		# file: name of raw data file from camera (Str)
+		# 
+		# Has attributes:
+		# self.dat: raw data in np array, each element is a 5120 long frame
+		# self.frames: number of frames in the data file
+		# self.shapedat: the raw data shaped into  a list of 64x80 2d np arrays. Each element of the list is a shaped frame of the data 
 
 		rawdat = np.genfromtxt(file, skip_footer = 2)
 		self.dat = rawdat[:,1:5121]
@@ -27,6 +32,13 @@ class ttc(object):
 
 		self.frames = len(self.dat[:,0])
 		# This gets the number of frames, useful in later calculations
+
+		self.shapedat = []
+		for frame in np.arange(frames):
+			self.shapedat.append(np.reshape(data.dat[frame,:],(64,80)))
+		# creates a list of 64x80 np arrays, each one of which corresponds to a single frame of data
+
+
 
 	def getframes(self):
 
@@ -49,6 +61,7 @@ class ttc(object):
 		# ani.save('name.mp4')
 
 		dat = self.dat
+		shpdat = self.shapedat
 		frames = self.frames
 
 		if Verbose:
@@ -60,8 +73,10 @@ class ttc(object):
 		pixmin = np.amin(dat)
 		ims = []
 		for frame in np.arange(frames):
-			ims.append((plt.pcolormesh(np.reshape(dat[frame,:],(64,80)),vmin = pixmin, vmax = pixmax),))
+			ims.append((plt.pcolormesh(shpdat[frame],vmin = pixmin, vmax = pixmax),))
+			# ims.append((plt.pcolormesh(np.reshape(dat[frame,:],(64,80)),vmin = pixmin, vmax = pixmax),))
 			im_ani = animation.ArtistAnimation(fig, ims, interval=time, repeat_delay=1000,blit=True)
+			# Changed to use shapedat instead of raw dat. Old way works, but this is more straightforward I feel.
 
 		plt.title(title)
 		plt.colorbar()
@@ -79,6 +94,7 @@ class ttc(object):
 		# Plot = Controls if produces plots, defaults true (Boolean)
 
 		dat = self.dat
+		shpdat = self.shapedat
 		frames = self.frames 
 		
 		if Verbose:
@@ -90,7 +106,7 @@ class ttc(object):
 				for j in np.arange(len(stddata[:,0])):
 					stdcalc = np.array([ ])
 					for framenum in np.arange(frames):
-						shapedat = np.reshape(dat[framenum,:],(64,80))
+						shapedat = shpdat[framenum]
 						stdcalc = np.append(stdcalc,shapedat[j,i])
 					stddata[j,i] = np.std(stdcalc)
 
@@ -115,6 +131,7 @@ class ttc(object):
 
 		dat = self.dat
 		frames = self.frames 
+		shpdat = self.shapedat
 		# Frames gives you the number of frames in the data file.
 
 		if Verbose:
@@ -124,8 +141,7 @@ class ttc(object):
 		avgdat = np.zeros((64,80))
 
 		for framenum in np.arange(frames):
-			shapedat = np.reshape(dat[framenum,:],(64,80))
-			# reshapes the data to the appropriate size for getting images.
+			shapedat = shpdat[framenum]
 			avgdat += shapedat/frames
 
 		mean = np.mean(avgdat)
@@ -156,6 +172,7 @@ class ttc(object):
 		dat = self.dat
 		frames = self.frames
 		# Frames gives you the number of frames in the data file.
+		shpdat = self.shapedat
 
 		if Verbose:
 			ttc.getframes(self)
@@ -163,8 +180,9 @@ class ttc(object):
 		avgdat = np.zeros((64,80))
 
 		for framenum in np.arange(frames):
-			shapedat = np.reshape(dat[framenum,:],(64,80))
+			# shapedat = np.reshape(dat[framenum,:],(64,80))
 			# reshapes the data to the appropriate size for getting images.
+			shapedat = shpdat[framenum]
 			avgdat += shapedat/frames
 
 		if Plot:
@@ -188,6 +206,7 @@ class ttc(object):
 		dat = self.dat
 		frames = self.frames
 		# Frames gives you the number of frames in the data file.
+		shpdat = self.shapedat
 
 		if Verbose:
 			ttc.getframes(self)
@@ -196,7 +215,7 @@ class ttc(object):
 		shapelist = []
 
 		for framenum in framelist:
-			shapedat = np.reshape(dat[framenum,:],(64,80))
+			shapedat = shpdat[framenum]
 			shapelist.append(shapedat)
 
 			if Plot:
