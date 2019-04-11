@@ -1,5 +1,5 @@
 import numpy as np
-import interactivePG as pg
+import hsganalysis.ipg as pg
 import matplotlib.pylab as plt
 import glob
 import os
@@ -12,7 +12,8 @@ import matplotlib.animation as animation
 
 class ttc(object):
 	'''
-	Class to contain all data analysis of ttc (TeraHertz to Thermal Converter) data. The TTC uses a Heimann sensor IR camera, and this code allows analysis of the output of this camera. Although the camera is capable of several file outputs, this code is based on the .txt output
+	Class to contain all data analysis of ttc (TeraHertz to Thermal Converter) data. The TTC uses a Heimann sensor IR camera, 
+	and this code allows analysis of the output of this camera. Although the camera is capable of several file outputs, this code is based on the .txt output
 	
 	'''
 
