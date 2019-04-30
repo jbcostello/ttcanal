@@ -1,12 +1,12 @@
 import numpy as np
-import hsganalysis.ipg as pg
+#import hsganalysis.ipg as pg
 import matplotlib.pylab as plt
-import glob
-import os
-import json
-import hsganalysis as hsg
-from hsganalysis import newhsganalysis
-import scipy as sp 
+#import glob
+#import os
+#import json
+#import hsganalysis as hsg
+#from hsganalysis import newhsganalysis
+#import scipy as sp 
 import matplotlib.animation as animation
 
 
@@ -35,8 +35,8 @@ class ttc(object):
 		# This gets the number of frames, useful in later calculations
 
 		self.shapedat = []
-		for frame in np.arange(frames):
-			self.shapedat.append(np.reshape(data.dat[frame,:],(64,80)))
+		for frame in np.arange(self.frames):
+			self.shapedat.append(np.reshape(self.dat[frame,:],(64,80)))
 		# creates a list of 64x80 np arrays, each one of which corresponds to a single frame of data
 
 
@@ -235,8 +235,6 @@ class ttc(object):
 ######################################################################################### 
 ######################################################################################### 
 ######################################################################################### 
-
-
 
 
 
