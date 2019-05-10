@@ -8,7 +8,7 @@ import matplotlib.pylab as plt
 #from hsganalysis import newhsganalysis
 #import scipy as sp 
 import matplotlib.animation as animation
-
+from scipy import ndimage
 
 class ttc(object):
     '''
@@ -119,7 +119,7 @@ class ttc(object):
 
         return stddata
 
-    def sdavgmap(self,sdrange,sdstep=1,title = ' ',Verbose = False,Plot = True):
+    def sdavgmap(self,sdrange = [1,2,3],sdstep=1,title = ' ',Verbose = False,Plot = True):
         # Creates a pcolormesh of the sd above average. This is computed by taking the average across frames, then finding the mean and std across pixels. The pixels that are above the mean, in steps determined by sdrange, are colored differently
         # Returns a 2x2 array of the values used to make the map.
         # 
@@ -246,6 +246,56 @@ class ttc(object):
 
         return shapelist
 
+    def diffmap(self, factor, title = ' ',Verbose = False,Plot = True):
+        stuff = self.shapedat
+        thing1 = np.zeros((64,80))
+        thing2 = np.zeros((64,80)) + 100000
+        
+        for i in range(len(stuff)):
+            thing1 = np.maximum(thing1, stuff[i])
+            thing2 = np.minimum(thing2, stuff[i])
+
+        raw = thing1 - thing2
+        raw[raw < factor*np.average(raw)] = 0
+    
+        if Plot:
+            plt.pcolormesh(raw, cmap="terrain")
+            plt.title(title)
+            plt.colorbar()
+            plt.show()
+
+        return raw
+        
+    def areaTry(self, factor, title = ' ',Verbose = False,Plot = True):
+        stuff = self.shapedat
+        thing1 = np.zeros((64,80))
+        thing2 = np.zeros((64,80)) + 100000
+        
+        for i in range(len(stuff)):
+            thing1 = np.maximum(thing1, stuff[i])
+            thing2 = np.minimum(thing2, stuff[i])
+
+        raw = thing1 - thing2
+        floor = np.average(raw)
+        raw[raw < factor*floor] = 0
+        raw[raw >= factor*floor] = 1
+        final = np.zeros((64,80))
+        
+        for i in range(2):
+            for j in range(2):
+                final += np.roll(raw, (-1)**i, axis = j)
+                final += np.roll(np.roll(raw, (-1)**i, axis = 0), (-1)**j, axis = 1)
+                
+        final = (final + raw) / 9
+    
+        if Plot:
+            plt.pcolormesh(final[2:-2, 2:-2], cmap="terrain")
+            plt.title(title)
+            plt.colorbar()
+            plt.show()
+
+        return raw
+        
 ######################################################################################### 
 ######################################################################################### 
 ######################################################################################### 
