@@ -10,6 +10,53 @@ import matplotlib.pylab as plt
 import matplotlib.animation as animation
 from scipy import ndimage
 
+def con_file(file):
+    # Turns raw data file into array of unsized frames, and creates an attribute for number of frames in a given frame.
+    # 
+    # file: name of raw data file from camera (Str)
+    # 
+    # Has attributes:
+    # self.dat: raw data in np array, each element is a 5120 long frame
+    # self.frames: number of frames in the data file
+    # self.shapedat: the raw data shaped into  a list of 64x80 2d np arrays. Each element of the list is a shaped frame of the data 
+    
+    rawdat = np.genfromtxt(file, skip_footer = 2)
+    dat = rawdat[:,1:5121]
+    # This produces an array, each element of which is 1520 pixel values forming a frame. Each element can be resized to 64x80 for plotting purposes 
+
+    frames = len(dat[:,0])
+    # This gets the number of frames, useful in later calculations
+    
+    try:    
+        shapedat = dat.reshape((-1, 64, 80))
+    except:
+        print("Data from file cannot be shaped into frames.")
+        return False
+    # creates a list of 64x80 np arrays, each one of which corresponds to a single frame of data
+        
+    return ttc(shapedat)
+
+def con_array(array):
+    if type(array) != np.ndarray:
+        try:
+            array = np.array(array)
+        except:
+            print("This is not an array or an array-like object.")
+            return False
+    
+    if len(array.shape) != 3:
+        try:
+            array = array.reshape((-1,64,80))
+        except:
+            print("This array is not the proper shape.")
+            return False
+
+    if (array.shape[1], array.shape[2]) != (64, 80):
+        print("This array is not the proper shape.")
+        return False
+    
+    return ttc(array)
+
 class ttc(object):
     '''
     Class to contain all data analysis of ttc (TeraHertz to Thermal Converter) data. The TTC uses a Heimann sensor IR camera, 
@@ -17,7 +64,7 @@ class ttc(object):
     
     '''
 
-    def __init__(self,file):
+    def __init__(self, array):
         # Turns raw data file into array of unsized frames, and creates an attribute for number of frames in a given frame.
         # 
         # file: name of raw data file from camera (Str)
@@ -27,16 +74,13 @@ class ttc(object):
         # self.frames: number of frames in the data file
         # self.shapedat: the raw data shaped into  a list of 64x80 2d np arrays. Each element of the list is a shaped frame of the data 
 
-        rawdat = np.genfromtxt(file, skip_footer = 2)
-        self.dat = rawdat[:,1:5121]
+        self.dat = array.reshape((-1, 5120))
         # This produces an array, each element of which is 1520 pixel values forming a frame. Each element can be resized to 64x80 for plotting purposes 
 
-        self.frames = len(self.dat[:,0])
+        self.frames = len(array)
         # This gets the number of frames, useful in later calculations
-
-        self.shapedat = []
-        for frame in np.arange(self.frames):
-            self.shapedat.append(np.reshape(self.dat[frame,:],(64,80)))
+        
+        self.shapedat = array
         # creates a list of 64x80 np arrays, each one of which corresponds to a single frame of data
 
 
