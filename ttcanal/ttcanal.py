@@ -1,14 +1,6 @@
 import numpy as np
-#import hsganalysis.ipg as pg
 import matplotlib.pylab as plt
-#import glob
-#import os
-#import json
-#import hsganalysis as hsg
-#from hsganalysis import newhsganalysis
-#import scipy as sp 
 import matplotlib.animation as animation
-#from scipy import ndimage
 import scipy.ndimage.filters as filters
 from scipy.optimize import curve_fit
 
@@ -25,6 +17,7 @@ class ttc(object):
         #   Also includes an attribute that notes whether the current leak has been accounted for
         #
         # inpt: name of raw data file from camera or array
+        # 	function can tell difference between the two
         #
         # Has attributes:
         # self.dat: raw data in np array, each element is a 5120 long frame
@@ -38,6 +31,8 @@ class ttc(object):
                 raw = np.genfromtxt(inpt, skip_footer = 2)
                 self.dat = raw[:,1:5121]
                 self.frames = len(self.dat)
+                # this gets rid of all the extra information in the txt file
+                # and records number of frames
                 try:    
                     self.shapedat = self.dat.reshape((-1, 64, 80))
                 except:
@@ -45,6 +40,7 @@ class ttc(object):
                     return False
             except:
                 print("Not a viable filename.")
+        # This will shape the pixels into the relevant 64x80 format
         else:
             try:
                 raw = np.array(inpt)
@@ -58,29 +54,30 @@ class ttc(object):
             except:
                 print("This is not an array or an array-like object.")
                 return False
+        # This code will try to make sense of an array you feed as the input. Useful if you 
+        # 	want to mess with data then recast it as a TTC object 
         
         self.leakfix = leakfix
 
 
     def getframes(self):
-
+		# An easy way to get frame number. Sort of depreciated, can just use self.frames
         print('Number of frames:',self.frames)
-
         return self.frames
 
     def animate(self,title=' ',time=200,Verbose=False):
         # Creates an animation of all frames in a given file
         # Returns im_ani animation
         # 
-        # file: filename of raw data from camera (Str)
         # title: title of plot (Str)
         # time: time per frame in microseconds (number)
         # Verbose: Boolean for providing extra information
-        # At the moment Verbose just tells you number of frames, but could add more in the future
+        # At the moment Verbose just tells you number of frames, 
+        # 	but could add more in the future
 
         # To save an animation, do 
-        # ani = ttc.animate()
-        # ani.save('name.mp4')
+        # 	ani = ttc.animate()
+        # 	ani.save('name.mp4')
 
         dat = self.dat
         shpdat = self.shapedat
@@ -90,15 +87,14 @@ class ttc(object):
             ttc.getframes(self)
 
         fig = plt.figure()
-
         pixmax = np.amax(dat)
         pixmin = np.amin(dat)
+        # This is used to set the color scale 
         ims = []
         for frame in np.arange(frames):
             ims.append((plt.pcolormesh(shpdat[frame],vmin = pixmin, vmax = pixmax),))
-            # ims.append((plt.pcolormesh(np.reshape(dat[frame,:],(64,80)),vmin = pixmin, vmax = pixmax),))
             im_ani = animation.ArtistAnimation(fig, ims, interval=time, repeat_delay=1000,blit=True)
-            # Changed to use shapedat instead of raw dat. Old way works, but this is more straightforward I feel.
+            # Plots each frame in a pcolormesh then adds it to the animation
 
         plt.title(title)
         plt.colorbar()
@@ -110,7 +106,6 @@ class ttc(object):
         # Creates a pcolormesh of the sd across frames 
         # Returns a 2x2 array of the values used to make the map.
         # 
-        # file: filename of raw data from camera (Str)
         # title: Title of the std plot (Str)
         # Verbose: Provides additional info for debugging purposes, defaults false (Boolean)
         # Plot = Controls if produces plots, defaults true (Boolean)
@@ -122,6 +117,7 @@ class ttc(object):
             ttc.getframes(self)
 
         stddata = np.zeros((64,80))
+        # initialize to be filled with the standard deviation data
 
         for i in np.arange(len(stddata[0,:])):
                 for j in np.arange(len(stddata[:,0])):
@@ -130,6 +126,7 @@ class ttc(object):
                         shapedat = shpdat[framenum]
                         stdcalc = np.append(stdcalc,shapedat[j,i])
                     stddata[j,i] = np.std(stdcalc)
+                    # calculates the std across frames for j,i th pixel, loops over whole image
 
         if Plot:
             plt.pcolormesh(stddata)
@@ -143,7 +140,6 @@ class ttc(object):
         # Creates a pcolormesh of the sd above average. This is computed by taking the average across frames, then finding the mean and std across pixels. The pixels that are above the mean, in steps determined by sdrange, are colored differently
         # Returns a 2x2 array of the values used to make the map.
         # 
-        # file: filename of raw data from camera (Str)
         # sdrange: array of values of sd that will be used to detect. Ex: [1,2,3] will find all points above 1sd,2sd,3sd. [0.5,1.0,1.5,2.5] will find all points above 0.5 to 2.5 sd. (numpy array)
         # sdstep: each step for a different level in the map. Defaults to one (Float)
         # title: Title of the std plot (Str)
@@ -158,11 +154,10 @@ class ttc(object):
             ttc.getframes(self)
 
         detect = np.zeros((64,80))
-        avgdat = np.zeros((64,80))
-
-        for framenum in np.arange(frames):
-            shapedat = shpdat[framenum]
-            avgdat += shapedat/frames
+        avgdat = self.avgmap(Verbose = Verbose, Plot = Verbose)
+        if Verbose:
+        	print('average data')
+        # Returns the data averaged over frames
 
         mean = np.mean(avgdat)
         std = np.std(avgdat)
@@ -171,8 +166,12 @@ class ttc(object):
             for i in np.arange(len(detect[0,:])):
                 for j in np.arange(len(detect[:,0])):
                     if avgdat[j,i] > mean+k*std: 
-                        # This if statement controls what makes a detection, can also add other if statments to include other things like below standard deviation etc.
+                        # This if statement controls what makes a detection, can also add 
+                        # 	other if statments to include other things like below standard 
+                        # 	deviation etc.
                         detect[j,i] += sdstep
+        # So if a given (j,i) pixel is more than k std above the mean, it adds one to the 
+        # 	detection plot.
         if Plot:
             plt.pcolormesh(detect)
             plt.title(title)
@@ -184,13 +183,11 @@ class ttc(object):
     def avgmap(self,title = ' ',Verbose = False,Plot = True):
         # Maps the average value across all frames on a pcolormap, and returns the average array
         # 
-        # file: filename for raw data from the camera (Str)
         # title: title for figure, assumed to be blank (Str)
         # Verbose: gives additional information, assumed false. (Boolean)
         # Plot: whether or not it'll produce a plot
         
         frames = self.frames
-        # Frames gives you the number of frames in the data file.
         shpdat = self.shapedat
 
         if Verbose:
@@ -199,10 +196,9 @@ class ttc(object):
         avgdat = np.zeros((64,80))
 
         for framenum in np.arange(frames):
-            # shapedat = np.reshape(dat[framenum,:],(64,80))
-            # reshapes the data to the appropriate size for getting images.
             shapedat = shpdat[framenum]
             avgdat += shapedat/frames
+            # averages together the frames
 
         if Plot:
             plt.pcolormesh(avgdat)
@@ -214,7 +210,11 @@ class ttc(object):
 
     def changemap(self,title = ' ',Verbose = False,Plot = True):
         # Shows the net change in values over time from the first frame to the last
-        
+        # 
+        # title: title for plot, assumed to be blank. (Str)
+        # Verbose: gives additional information if True, assumed Flase. (Boolean)
+        # Plot: if true produces Plot, assumed true
+
         stuff = self.shapedat
         final = np.zeros((64,80))
         
@@ -257,6 +257,7 @@ class ttc(object):
         for framenum in framelist:
             shapedat = shpdat[framenum]
             shapelist.append(shapedat)
+            # grabs the frame from framelist and appends it to the shapelist list
 
             if Plot:
                 plt.pcolormesh(shapedat)
