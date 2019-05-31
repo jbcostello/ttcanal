@@ -6,15 +6,18 @@ from scipy.optimize import curve_fit
 
 class ttc(object):
     '''
-    Class to contain all data analysis of ttc (TeraHertz to Thermal Converter) data. The TTC uses a Heimann sensor IR camera, 
-    and this code allows analysis of the output of this camera. Although the camera is capable of several file outputs, this code is based on the .txt output
+    Class to contain all data analysis of ttc (TeraHertz to Thermal Converter) data. 
+    The TTC uses a Heimann sensor IR camera, and this code allows analysis of the output 
+    of this camera. Although the camera is capable of several file outputs, this 
+    code is based on the .txt output
     
     '''
 
     def __init__(self, inpt, leakfix = False):
         # Turns raw data file or array-like object into
-        #   an array of unsized frames, an array of 64x80 frames, and an attribute for number of frames
-        #   Also includes an attribute that notes whether the current leak has been accounted for
+        #   an array of unsized frames, an array of 64x80 frames, and an attribute for 
+        # 	number of frames. Also includes an attribute that notes whether the 
+        # 	current leak has been accounted for
         #
         # inpt: name of raw data file from camera or array
         # 	function can tell difference between the two
@@ -22,7 +25,8 @@ class ttc(object):
         # Has attributes:
         # self.dat: raw data in np array, each element is a 5120 long frame
         # self.frames: number of frames in the data file
-        # self.shapedat: the raw data shaped into  a list of 64x80 2d np arrays. Each element of the list is a shaped frame of the data 
+        # self.shapedat: the raw data shaped into  a list of 64x80 2d np arrays. 
+        # 	Each element of the list is a shaped frame of the data 
         #
         # except statements allow code to run without errors if improper data is given
         
@@ -126,7 +130,8 @@ class ttc(object):
                         shapedat = shpdat[framenum]
                         stdcalc = np.append(stdcalc,shapedat[j,i])
                     stddata[j,i] = np.std(stdcalc)
-                    # calculates the std across frames for j,i th pixel, loops over whole image
+                    # calculates the std across frames for j,i th pixel, loops over 
+                    # 	the whole image
 
         if Plot:
             plt.pcolormesh(stddata)
@@ -137,10 +142,15 @@ class ttc(object):
         return stddata
 
     def sdavgmap(self,sdrange = [1,2,3],sdstep=1,title = ' ',Verbose = False,Plot = True):
-        # Creates a pcolormesh of the sd above average. This is computed by taking the average across frames, then finding the mean and std across pixels. The pixels that are above the mean, in steps determined by sdrange, are colored differently
-        # Returns a 2x2 array of the values used to make the map.
+        # Creates a pcolormesh of the sd above average. This is computed by taking the 
+        # 	average across frames, then finding the mean and std across pixels. 
+        # 	The pixels that are above the mean, in steps determined by sdrange, 
+        # 	are colored differently. 
+		# Returns a 2x2 array of the values used to make the map.
         # 
-        # sdrange: array of values of sd that will be used to detect. Ex: [1,2,3] will find all points above 1sd,2sd,3sd. [0.5,1.0,1.5,2.5] will find all points above 0.5 to 2.5 sd. (numpy array)
+        # sdrange: array of values of sd that will be used to detect. Ex: [1,2,3] 
+        # 	will find all points above 1sd,2sd,3sd. [0.5,1.0,1.5,2.5] will find all 
+        # 	points above 0.5 to 2.5 sd. (numpy array)
         # sdstep: each step for a different level in the map. Defaults to one (Float)
         # title: Title of the std plot (Str)
         # Verbose: Provides additional info for debugging purposes (Boolean)
@@ -170,8 +180,8 @@ class ttc(object):
                         # 	other if statments to include other things like below standard 
                         # 	deviation etc.
                         detect[j,i] += sdstep
-        # So if a given (j,i) pixel is more than k std above the mean, it adds one to the 
-        # 	detection plot.
+        # So if a given (j,i) pixel is more than k std above the mean, it adds one sd step
+        # 	to the detection plot.
         if Plot:
             plt.pcolormesh(detect)
             plt.title(title)
@@ -181,7 +191,8 @@ class ttc(object):
         return detect
 
     def avgmap(self,title = ' ',Verbose = False,Plot = True):
-        # Maps the average value across all frames on a pcolormap, and returns the average array
+        # Maps the average value across all frames on a pcolormap, and returns the average 
+        # 	array
         # 
         # title: title for figure, assumed to be blank (Str)
         # Verbose: gives additional information, assumed false. (Boolean)
@@ -215,11 +226,13 @@ class ttc(object):
         # Verbose: gives additional information if True, assumed Flase. (Boolean)
         # Plot: if true produces Plot, assumed true
 
-        stuff = self.shapedat
+        shpdat = self.shpdat
         final = np.zeros((64,80))
         
-        for i in range(len(stuff)-1):
-            hold = np.subtract(stuff[i], stuff[i+1])
+        for i in range(len(shpdat)-1):
+            hold = np.subtract(shpdat[i], shpdat[i+1])
+            # so this subtracts each frame from the next one? Then checks if it's bigger than
+            # 	the previous frame?
             hold[hold > 0] = 1
             hold[hold < 0] = -1
             final = np.add(final, hold)
@@ -237,13 +250,12 @@ class ttc(object):
         # Creates arrays of raw frames and plots them
         # Returns a list of raw 2x2 numpy arrays correctly shaped
 
-        # file: filename for raw data from the camera (Str)
-        # framelist: array that lists which frames to plot/create shaped arrays, defaults to just the first frame (np array)
+        # framelist: array that lists which frames to plot/create shaped arrays, 
+        # 	defaults to just the first frame (np array)
         # title: title of the plots(Str)
         # Verbose: provides additional information if set to true, defaults to false (Boolean)
         # Plot: creates plots of raw data when set to true, defaults to true (Boolean)
 
-        dat = self.dat
         frames = self.frames
         # Frames gives you the number of frames in the data file.
         shpdat = self.shapedat
@@ -271,18 +283,26 @@ class ttc(object):
         # Shows the net difference between the maximum and minumum values in each pixel,
         #   but ignores the pixels below a certain threshold
         #
-        # factor: controls the cutoff threshold, labelled as a factor times the average of the entire dataset
-        stuff = self.shapedat
+        # factor: controls the cutoff threshold, labelled as a factor times the 
+        # 	average of the entire dataset
+        # title: title of the plots(Str)
+        # Verbose: provides additional information if set to true, defaults to false (Boolean)
+        # Plot: creates plots of raw data when set to true, defaults to true (Boolean)
+
+        shpdat = self.shapedat
         thing1 = np.zeros((64,80))
         thing2 = np.zeros((64,80)) + 100000
         
-        for i in range(len(stuff)):
-            thing1 = np.maximum(thing1, stuff[i])
-            thing2 = np.minimum(thing2, stuff[i])
+        for i in range(len(shpdat)):
+            thing1 = np.maximum(thing1, shpdat[i])
+            thing2 = np.minimum(thing2, shpdat[i])
+        # Ok so this keeps a running total of the max, min value for each pixel
 
         raw = thing1 - thing2
         raw[raw < factor*np.average(raw)] = 0
-    
+        # This give the difference between min and max for each pixel, with a cutoff determined
+        # 	by factor
+   
         if Plot:
             plt.pcolormesh(raw, cmap="terrain")
             plt.title(title)
@@ -294,13 +314,21 @@ class ttc(object):
     def areaTry(self, factor, title = ' ',Verbose = False,Plot = True):
         # Similar to diffmap, but smears what would be the final image to make areas 
         #   of similar values more visually obvious
-        stuff = self.shapedat
+        # 
+        # factor: controls the cutoff threshold, labelled as a factor times the 
+        # 	average of the entire dataset
+        # title: title of the plots(Str)
+        # Verbose: provides additional information if set to true, defaults to false (Boolean)
+        # Plot: creates plots of raw data when set to true, defaults to true (Boolean)
+
+
+        shpdat = self.shapedat
         thing1 = np.zeros((64,80))
         thing2 = np.zeros((64,80)) + 100000
         
-        for i in range(len(stuff)):
-            thing1 = np.maximum(thing1, stuff[i])
-            thing2 = np.minimum(thing2, stuff[i])
+        for i in range(len(shpdt)):
+            thing1 = np.maximum(thing1, shpdat[i])
+            thing2 = np.minimum(thing2, shpdat[i])
 
         raw = thing1 - thing2
         floor = np.average(raw)
@@ -324,7 +352,7 @@ class ttc(object):
         return raw
         
     def calib_max(self):   
-        # A function to retrieve calibration data from Toothpick Jig testing
+        # A function to retrieve calibration data from Toothpick Jig testing of pixel size
         #
         # returns the mean of distances between high points in each frame, 
         #   the standard deviation, and each frame with the relevant points marked
@@ -356,7 +384,8 @@ class ttc(object):
         return mean, std, maxframes
 
     def fix_leak(self, background):
-        # Accepts a recording of background data to eliminate current leak in data taken from camera
+        # Accepts a recording of background data to eliminate current leak in data 
+        # 	taken from camera
         
         mask = background.avgmap(Plot = False) - np.amin(background.avgmap(Plot = False))
         
