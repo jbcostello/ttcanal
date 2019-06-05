@@ -382,19 +382,16 @@ class ttc(object):
                 while len(np.where(maxima[i] == True)[0]) > 2:
                     factor += 0.01
                     maxima[i][shp[i] < np.mean(shp) + scale*factor] = 0
-                print(factor)
             
                 dis = (np.where(maxima[i] == True))
                 try:
                     distances[i] = ((dis[0][0]-dis[0][1])**2 + (dis[1][0]-dis[1][1])**2)**(0.5)
                     maxframes.append(maxima[i])
                 except:
-                    print("nope!")
                     pass
             else:
                 badframe +=1
         
-        print(badframe, frames)
         mean = np.mean(list(distances.values()))
         std = np.std(list(distances.values()))
         
