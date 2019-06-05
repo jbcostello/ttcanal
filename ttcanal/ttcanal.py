@@ -97,7 +97,8 @@ class ttc(object):
         ims = []
         for frame in np.arange(frames):
             ims.append((plt.pcolormesh(shpdat[frame],vmin = pixmin, vmax = pixmax),))
-            im_ani = animation.ArtistAnimation(fig, ims, interval=time, repeat_delay=1000,blit=True)
+            im_ani = animation.ArtistAnimation(fig, ims, interval=time, repeat_delay=1000,
+            	blit=True)
             # Plots each frame in a pcolormesh then adds it to the animation
 
         plt.title(title)
@@ -300,8 +301,8 @@ class ttc(object):
 
         raw = thing1 - thing2
         raw[raw < factor*np.average(raw)] = 0
-        # This give the difference between min and max for each pixel, with a cutoff determined
-        # 	by factor
+        # This give the difference between min and max for each pixel, with a cutoff 
+        # 	determined by factor
    
         if Plot:
             plt.pcolormesh(raw, cmap="terrain")
