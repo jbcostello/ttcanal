@@ -11,13 +11,16 @@ class ttc(object):
     
     '''
 
-    def __init__(self, inpt, leakfix = False):
+    def __init__(self, inpt, background = False):
         # Turns raw data file or array-like object into
         #   an array of unsized frames, an array of 64x80 frames, and an attribute for number of frames
         #   Also includes an attribute that notes whether the current leak has been accounted for
         #
-        # inpt: name of raw data file from camera or array
+        # inpt: name of file or array that holds raw input from camera
         # 	function can tell difference between the two
+        #
+        # background: name of file, array, or ttc that holds background data from ttc
+        #   background data is removed from input if given, otherwise input converted as is
         #
         # Has attributes:
         # self.dat: raw data in np array, each element is a 5120 long frame
@@ -26,7 +29,7 @@ class ttc(object):
         #
         # except statements allow code to run without errors if improper data is given
         
-        if type(inpt) == str:
+        if type(inpt) == str: #this section runs if the input is a txtfile
             try:
                 raw = np.genfromtxt(inpt, skip_footer = 2)
                 self.dat = raw[:,1:5121]
@@ -41,7 +44,7 @@ class ttc(object):
             except:
                 print("Not a viable filename.")
         # This will shape the pixels into the relevant 64x80 format
-        else:
+        else: #this section will run if the input is not a txtfile
             try:
                 raw = np.array(inpt)
                 try:
@@ -57,8 +60,16 @@ class ttc(object):
         # This code will try to make sense of an array you feed as the input. Useful if you 
         # 	want to mess with data then recast it as a TTC object 
         
-        self.leakfix = leakfix
-
+        if background != False:
+            try:
+                background.frames
+            except:
+                background = ttc(background)
+            mask = background.avgmap(Plot = False) - np.amin(background.avgmap(Plot = False))
+            self.shapedat = self.shapedat - mask
+            self.dat = self.shapedat.reshape((-1,5120))
+        # This section runs if you provide a background to subtract from the input
+        # The background can be a txtfile, array-like object, or another ttc
 
     def getframes(self):
 		# An easy way to get frame number. Sort of depreciated, can just use self.frames
@@ -137,10 +148,14 @@ class ttc(object):
         return stddata
 
     def sdavgmap(self,sdrange = [1,2,3],sdstep=1,title = ' ',Verbose = False,Plot = True):
-        # Creates a pcolormesh of the sd above average. This is computed by taking the average across frames, then finding the mean and std across pixels. The pixels that are above the mean, in steps determined by sdrange, are colored differently
+        # Creates a pcolormesh of the sd above average. This is computed by taking the average across frames, 
+        #   then finding the mean and std across pixels. The pixels that are above the mean, 
+        #   in steps determined by sdrange, are colored differently
+        #
         # Returns a 2x2 array of the values used to make the map.
         # 
-        # sdrange: array of values of sd that will be used to detect. Ex: [1,2,3] will find all points above 1sd,2sd,3sd. [0.5,1.0,1.5,2.5] will find all points above 0.5 to 2.5 sd. (numpy array)
+        # sdrange: array of values of sd that will be used to detect. Ex: [1,2,3] will find all points above 1sd,2sd,3sd. 
+        #   [0.5,1.0,1.5,2.5] will find all points above 0.5 to 2.5 sd. (numpy array)
         # sdstep: each step for a different level in the map. Defaults to one (Float)
         # title: Title of the std plot (Str)
         # Verbose: Provides additional info for debugging purposes (Boolean)
@@ -208,18 +223,20 @@ class ttc(object):
 
         return avgdat
 
-    def changemap(self,title = ' ',Verbose = False,Plot = True):
-        # Shows the net change in values over time from the first frame to the last
+    def changeMap(self,title = ' ',Verbose = False,Plot = True):
+        # Provides an indication of the time each pixel spends increasing or decreasing in temp
+        # This is useful for recordings where the heating of the TTC absorber takes much 
+        #   longer than the cooldown
         # 
         # title: title for plot, assumed to be blank. (Str)
         # Verbose: gives additional information if True, assumed Flase. (Boolean)
         # Plot: if true produces Plot, assumed true
 
-        stuff = self.shapedat
+        shpdat = self.shapedat
         final = np.zeros((64,80))
         
-        for i in range(len(stuff)-1):
-            hold = np.subtract(stuff[i], stuff[i+1])
+        for i in range(self.frames-1):
+            hold = np.subtract(shpdat[i], shpdat[i+1])
             hold[hold > 0] = 1
             hold[hold < 0] = -1
             final = np.add(final, hold)
@@ -267,20 +284,22 @@ class ttc(object):
 
         return shapelist
 
-    def diffmap(self, factor, title = ' ',Verbose = False,Plot = True):
+    def pixelRange(self, factor, title = ' ',Plot = True):
         # Shows the net difference between the maximum and minumum values in each pixel,
         #   but ignores the pixels below a certain threshold
         #
         # factor: controls the cutoff threshold, labelled as a factor times the average of the entire dataset
+        # title: title of the plots(Str)
+        # Plot: creates plots of pixel range when set to true, defaults to true (Boolean)
         stuff = self.shapedat
-        thing1 = np.zeros((64,80))
-        thing2 = np.zeros((64,80)) + 100000
+        pixmax = np.zeros((64,80))
+        pixmin = np.zeros((64,80)) + 100000
         
         for i in range(len(stuff)):
-            thing1 = np.maximum(thing1, stuff[i])
-            thing2 = np.minimum(thing2, stuff[i])
+            pixmax = np.maximum(pixmax, stuff[i])
+            pixmin = np.minimum(pixmin, stuff[i])
 
-        raw = thing1 - thing2
+        raw = pixmax - pixmin
         raw[raw < factor*np.average(raw)] = 0
     
         if Plot:
@@ -291,9 +310,13 @@ class ttc(object):
 
         return raw
         
-    def areaTry(self, factor, title = ' ',Verbose = False,Plot = True):
-        # Similar to diffmap, but smears what would be the final image to make areas 
+    def smearMap(self, factor, title = ' ',Plot = True):
+        # Similar to pixelRange, but smears what would be the final image to make areas 
         #   of similar values more visually obvious
+        #
+        # factor: controls the cutoff threshold, labelled as a factor times the average of the entire dataset
+        # title: title of the plots(Str)
+        # Plot: creates plots of pixel range when set to true, defaults to true (Boolean)
         stuff = self.shapedat
         thing1 = np.zeros((64,80))
         thing2 = np.zeros((64,80)) + 100000
@@ -323,51 +346,48 @@ class ttc(object):
 
         return raw
         
-    def calib_max(self):   
+    def cam_calib(self):   
         # A function to retrieve calibration data from Toothpick Jig testing
         #
         # returns the mean of distances between high points in each frame, 
         #   the standard deviation, and each frame with the relevant points marked
-        maxfilter, maxima = np.copy(self.shapedat), np.copy(self.shapedat)
+        
+        shp, frames = self.shapedat, self.frames
+        maxfilter, maxima = np.copy(shp), np.copy(shp)
         distances, size = {}, 15
         maxframes = []
+        minScale = np.amax(shp[-1]) - np.amin(shp[-1])
+        badframe = 0
         
-        for i in range(len(self.shapedat)):
-            maxfilter[i] = filters.maximum_filter(self.shapedat[i], size)
-            maxima[i] = (self.shapedat[i] == maxfilter[i])
-            scale = np.amax(self.shapedat[i]) - np.mean(self.shapedat[i])
-            if scale > 1.95:
+        for i in range(frames):
+            maxfilter[i] = filters.maximum_filter(shp[i], size)
+            maxima[i] = (shp[i] == maxfilter[i])
+            scale = np.amax(shp[i]) - np.amin(shp[i])
+            if scale > 1.5*minScale:
                 factor = 0
-                maxima[i][self.shapedat[i] < np.mean(self.shapedat) + scale*factor] = 0
+                maxima[i][shp[i] < np.mean(shp) + scale*factor] = 0
                 while len(np.where(maxima[i] == True)[0]) > 2:
                     factor += 0.01
-                    maxima[i][self.shapedat[i] < np.mean(self.shapedat) + scale*factor] = 0
+                    maxima[i][shp[i] < np.mean(shp) + scale*factor] = 0
+                print(factor)
             
                 dis = (np.where(maxima[i] == True))
                 try:
                     distances[i] = ((dis[0][0]-dis[0][1])**2 + (dis[1][0]-dis[1][1])**2)**(0.5)
                     maxframes.append(maxima[i])
                 except:
+                    print("nope!")
                     pass
+            else:
+                badframe +=1
         
+        print(badframe, frames)
         mean = np.mean(list(distances.values()))
         std = np.std(list(distances.values()))
         
         return mean, std, maxframes
-
-    def fix_leak(self, background):
-        # Accepts a recording of background data to eliminate current leak in data taken from camera
-        
-        mask = background.avgmap(Plot = False) - np.amin(background.avgmap(Plot = False))
-        
-        if self.leakfix == False:
-            new = self.shapedat - mask
-            fix = ttc(new, leakfix = True)
-            return fix
-        else:
-            return self
     
-    def row_ani(self, line = "row 0", title=' ',time=200,terms=15):
+    def line_cut(self, line = "row 0", title=' ',time=200):
         # Creates an over-time animation of the line plot of a given row or column
         # Defaults to the bottom row
         #
@@ -397,21 +417,21 @@ class ttc(object):
             return ret
         
         if guide[coord] == 80:
-            data = [self.shapedat[:, num],[]]
+            data = [self.shapedat[:, num], []]
         elif guide[coord] == 64:
-            data = [self.shapedat[:, :, num],[]]
+            data = [self.shapedat[:, :, num], []]
+        
+        hold = [curve_fit(fourier, np.arange(guide[coord]), data[0][i], [1.0] * 15)[0] for i in range(guide[coord])]
+        data[1] = [[np.sum([(hold[k][i]*np.cos((i*np.pi*j)/guide[coord])) for i in range(15)]) for j in range(guide[coord])] for k in range(len(hold))]
 
-        hold = [curve_fit(fourier, np.arange(guide[coord]), data[0][i], [1.0] * terms)[0] for i in range(guide[coord])]
-        data[1] = [[np.sum([(hold[k][i]*np.cos((i*np.pi*j)/guide[coord])) for i in range(terms)]) for j in range(guide[coord])] for k in range(len(hold))]
-            
         fig = plt.figure()
         ax1 = fig.add_subplot(1,1,1)
         ax1.set_ylim(np.amin(data[0])-1, np.amax(data[0])+1)
         
         ims = []
         for i in range(guide[coord]):
-            im1, = ax1.plot(range(guide[coord]), data[0][i], color="black")
-            im2, = ax1.plot(range(guide[coord]), data[1][i], color="red")
+            im1, = ax1.plot(data[0][i], color="black")
+            im2, = ax1.plot(data[1][i], color="red")
             ims.append([im1, im2])
         
         im_ani = animation.ArtistAnimation(fig, ims, interval=time, repeat_delay=1000,blit=True)
@@ -420,7 +440,7 @@ class ttc(object):
         
         return im_ani
 
-    def plot_smudge(self, num):
+    def plot_bin(self, num):
         # Averages a number of adjacent frames to try to increase SNR
         # Number of frames will match input ttc length by adding last frame as many times as necessary
         #
@@ -429,16 +449,31 @@ class ttc(object):
         if num > self.frames:
             return False
         
-        smudged = [(np.sum(self.shapedat[i: i+num], axis=0)/num) for i in range(self.frames-(num-1))]
+        hold = np.copy(self.shapedat)
+        while (len(hold) % num != 0):
+            hold = hold[:-1]
         
-        print(type(smudged))
-        for i in range(num-1):
-            smudged.append(smudged[-1])
+        binned = [(np.sum(hold[num*i: num*(i+1)], axis=0)/num) for i in range(int(len(hold)/num))]
+
+        return ttc(binned)
         
-        print(type(smudged))
-        return ttc(smudged)
+    def fourier2D(self, terms = 15):
+        # Changes every frame into a 2d fourier transform with a set number of terms.
+        # Default is 15 terms, but it can be changed
+        #
+        # terms: number of terms for the fourier expansion. Defaults to 15.
+        #   Asking for more than 63 terms makes it default to the full expansion
         
+        shpdat = self.shapedat
         
+        hold = np.fft.fft2(shpdat)
+        
+        if terms < 63:
+            hold[:, (terms+1):], hold[:, :, (terms+1):] = 0.0, 0.0
+        
+        final = ttc(np.real(np.fft.ifft2(hold)))
+        return final
+
 
 ######################################################################################### 
 ######################################################################################### 
