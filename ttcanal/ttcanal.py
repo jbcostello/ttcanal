@@ -248,6 +248,8 @@ class ttc(object):
             hold[hold > 0] = 1
             hold[hold < 0] = -1
             final = np.add(final, hold)
+        # This loops over frames, for each pixel adds(subtracts) one if the pixel value for 
+        # 	that frame is more(less) than the next frame.
     
         if Plot:
             plt.pcolormesh(final, cmap="terrain")
@@ -261,7 +263,7 @@ class ttc(object):
     def rawmap(self,framelist = np.array([0]),title = ' ',Verbose = False,Plot = True):
         # Creates arrays of raw frames and plots them
         # Returns a list of raw 2x2 numpy arrays correctly shaped
-
+        # 
         # framelist: array that lists which frames to plot/create shaped arrays, 
         # 	defaults to just the first frame (np array)
         # title: title of the plots(Str)
@@ -295,7 +297,8 @@ class ttc(object):
         # Shows the net difference between the maximum and minumum values in each pixel,
         #   but ignores the pixels below a certain threshold
         #
-        # factor: controls the cutoff threshold, labelled as a factor times the average of the entire dataset
+        # factor: controls the cutoff threshold, labelled as a factor times the average 
+        # 	of the entire dataset (Int or Float)
         # title: title of the plots(Str)
         # Plot: creates plots of pixel range when set to true, defaults to true (Boolean)
         stuff = self.shapedat
@@ -305,6 +308,7 @@ class ttc(object):
         for i in range(len(stuff)):
             pixmax = np.maximum(pixmax, stuff[i])
             pixmin = np.minimum(pixmin, stuff[i])
+        # Loops through the frames keeping the minimum/maximum for each pixel
 
         raw = pixmax - pixmin
         raw[raw < factor*np.average(raw)] = 0
@@ -337,20 +341,23 @@ class ttc(object):
         for i in range(len(shpdat)):
             pixmax = np.maximum(pixmax, shpdat[i])
             pixmin = np.minimum(pixmin, shpdat[i])
+        # Loops through the frames keeping the minimum/maximum for each pixel
 
         raw = pixmax - pixmin
         floor = np.average(raw)
         raw[raw < factor*floor] = 0
         raw[raw >= factor*floor] = 1
         final = np.zeros((64,80))
+        # sets pixels that have greater change than cutoff to 1, otherwise sets to
         
         for i in range(2):
             for j in range(2):
                 final += np.roll(raw, (-1)**i, axis = j)
                 final += np.roll(np.roll(raw, (-1)**i, axis = 0), (-1)**j, axis = 1)
                 
-        final = (final + raw) / 9
-    
+        final = (final + raw)
+    	# This 'smears' each pixel above the cutoff to a 3x3 square through the roll function
+
         if Plot:
             plt.pcolormesh(final[2:-2, 2:-2], cmap="terrain")
             plt.title(title)
