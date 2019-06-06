@@ -348,7 +348,7 @@ class ttc(object):
         raw[raw < factor*floor] = 0
         raw[raw >= factor*floor] = 1
         final = np.zeros((64,80))
-        # sets pixels that have greater change than cutoff to 1, otherwise sets to
+        # sets pixels that have greater change than cutoff to 1, otherwise sets to 0
         
         for i in range(2):
             for j in range(2):
@@ -356,10 +356,10 @@ class ttc(object):
                 final += np.roll(np.roll(raw, (-1)**i, axis = 0), (-1)**j, axis = 1)
                 
         final = (final + raw)
-    	# This 'smears' each pixel above the cutoff to a 3x3 square through the roll function
+    	# This adds the value of each pixel to the 8 around it
 
         if Plot:
-            plt.pcolormesh(final[2:-2, 2:-2], cmap="terrain")
+            plt.pcolormesh(final[2:-2, 2:-2], cmap="terrain") # Plot ignores unwanted edge effects
             plt.title(title)
             plt.colorbar()
             plt.show()
@@ -377,27 +377,35 @@ class ttc(object):
         distances, size = {}, 15
         maxframes = []
         minScale = np.amax(shp[-1]) - np.amin(shp[-1])
+        # Finds the maximum range of the last frame, which should be mostly flat
         badframe = 0
         
         for i in range(frames):
             maxfilter[i] = filters.maximum_filter(shp[i], size)
             maxima[i] = (shp[i] == maxfilter[i])
+            # Isolates points that have the maximum value in a 15x15 square around them
             scale = np.amax(shp[i]) - np.amin(shp[i])
+            # Finds the maximum range of the current frame
             if scale > 1.5*minScale:
+                # Looks for frames with a significantly higher max range than the last frame 
                 factor = 0
-                maxima[i][shp[i] < np.mean(shp) + scale*factor] = 0
+                maxima[i][shp[i] < np.mean(shp)] = 0
+                # Sets any maxima with a value below the mean to 0
                 while len(np.where(maxima[i] == True)[0]) > 2:
                     factor += 0.01
                     maxima[i][shp[i] < np.mean(shp) + scale*factor] = 0
-            
-                dis = (np.where(maxima[i] == True))
+                    # Loops through the maxima frame over and over, raising the threshold
+                    #   for setting maxima to 0 until at most 2 points remain
+
+                dis = (np.where(maxima[i] == True)) #List of remaining maxima
                 try:
                     distances[i] = ((dis[0][0]-dis[0][1])**2 + (dis[1][0]-dis[1][1])**2)**(0.5)
                     maxframes.append(maxima[i])
                 except:
                     pass
-            else:
-                badframe +=1
+                # Tries to find the distance between the two points in dis and save the relevant frame
+                #   Passes if it doesn't work, i.e. there is only one point held in dis
+        
         
         mean = np.mean(list(distances.values()))
         std = np.std(list(distances.values()))
@@ -412,7 +420,7 @@ class ttc(object):
         # ani, plot_data = ttc.row_ani(line = "row/col #")
         # ani.save('name.mp4')
         
-        guide = {"row":80, "col":64}
+        guide = {"row":80, "col":64} #Helps distinguish between row and column cuts
         
         inpt = line.split()
         if (((len(inpt) == 2) and (inpt[0] in guide)) and (type(inpt[1]==int))):
@@ -426,20 +434,24 @@ class ttc(object):
         else:
             print("This is not a valid entry.")
             return False
+        # Big input block that keeps the program from complaining if you type the input wrong
         
         def fourier(x, *a):
             ret = 0
             for deg in range(len(a)):
                 ret += a[deg] * np.cos(((deg) * np.pi * x)/ guide[coord])
             return ret
+        # Defines the format of the fourier expansion (all cosine terms)
         
         if guide[coord] == 80:
             data = [self.shapedat[:, num], []]
         elif guide[coord] == 64:
             data = [self.shapedat[:, :, num], []]
+        # Takes a slice of the data; the same row or column from every frame
         
         hold = [curve_fit(fourier, np.arange(guide[coord]), data[0][i], [1.0] * 15)[0] for i in range(guide[coord])]
         data[1] = [[np.sum([(hold[k][i]*np.cos((i*np.pi*j)/guide[coord])) for i in range(15)]) for j in range(guide[coord])] for k in range(len(hold))]
+        # Creates a 15-term fourier expansion of the original data, then finds the relevant points for the plot
 
         fig = plt.figure()
         ax1 = fig.add_subplot(1,1,1)
@@ -447,8 +459,8 @@ class ttc(object):
         
         ims = []
         for i in range(guide[coord]):
-            im1, = ax1.plot(data[0][i], color="black")
-            im2, = ax1.plot(data[1][i], color="red")
+            im1, = ax1.plot(data[0][i], color="black") # Plots original data
+            im2, = ax1.plot(data[1][i], color="red") # Plots fourier data
             ims.append([im1, im2])
         
         im_ani = animation.ArtistAnimation(fig, ims, interval=time, repeat_delay=1000,blit=True)
@@ -483,10 +495,11 @@ class ttc(object):
         
         shpdat = self.shapedat
         
-        hold = np.fft.fft2(shpdat)
+        hold = np.fft.fft2(shpdat) # 2D Fourier transform of the given frame
         
         if terms < 63:
-            hold[:, (terms+1):], hold[:, :, (terms+1):] = 0.0, 0.0
+            hold[:, (terms+1):], hold[:, :, (terms+1):] = 0.0, 0.0 
+            # Sets unwanted terms to 0
         
         final = ttc(np.real(np.fft.ifft2(hold)))
         return final
