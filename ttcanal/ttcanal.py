@@ -1,9 +1,11 @@
 
-# import cv2  # this is a wrapped C library, may be platform specific
+import cv2 as cv  # this is a wrapped C library, may be platform specific
 import matplotlib.animation as animation
 import matplotlib.pylab as plt
 import numpy as np
+from PIL import Image
 import scipy.ndimage.filters as filters
+import sys
 from scipy.optimize import curve_fit
 
 
@@ -432,7 +434,8 @@ class ttc(object):
 
                 dis = (np.where(maxima[i] == True))  # List of remaining maxima
                 try:
-                    distances[i] = ((dis[0][0]-dis[0][1])**2 + (dis[1][0]-dis[1][1])**2)**(0.5)
+                    distances[i] = ((dis[0][0]-dis[0][1])**2 +
+                                    (dis[1][0]-dis[1][1])**2)**(0.5)
                     maxframes.append(maxima[i])
                 except:
                     pass
@@ -549,8 +552,14 @@ class ttc(object):
         final = ttc(np.real(np.fft.ifft2(hold)))
         return final
 
-#    def circleSeek(self):  # call openCV2 library to analyze array for circles
-#        return
+    def circleSeek(self):  # call openCV2 library to analyze array for circles
+        imageArr = []
+        for i in range(self.frames):
+            imageArr.append(Image.fromarray(self.shapedat[i], 'L'))
+            # forms B/W Image from given array, and appends it to a new array
+            # requires 'L' mode as second parameter for B/W
+        imageArr[45].save("out.png")
+        return
 ###############################################################################
 ###############################################################################
 ###############################################################################
