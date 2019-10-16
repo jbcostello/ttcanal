@@ -1,12 +1,16 @@
 
 import cv2 as cv  # this is a wrapped C library, may be platform specific
+import matplotlib
 import matplotlib.animation as animation
 import matplotlib.pylab as plt
+import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 import scipy.ndimage.filters as filters
 import sys
 from scipy.optimize import curve_fit
+from matplotlib.colors import LogNorm
+matplotlib.use('TkAgg')
 
 
 class ttc(object):
@@ -81,7 +85,8 @@ class ttc(object):
                 background.frames
             except:
                 background = ttc(background)
-            mask=background.avgmap(Plot=False) - np.amin(background.avgmap(Plot=False))
+            mask=(background.avgmap(Plot=False)
+                  - np.amin(background.avgmap(Plot=False)))
             self.shapedat = self.shapedat - mask
             self.dat = self.shapedat.reshape((-1, 5120))
         # Section runs if you provide a background to subtract from the input
@@ -93,7 +98,7 @@ class ttc(object):
         print('Number of frames:', self.frames)
         return self.frames
 
-    def animate(self, title=' ', time=200, Verbose=False):
+    def animate(self, title=' ', Verbose=False, time=200):
         # Creates an animation of all frames in a given file
         # Returns im_ani animation
         #
@@ -169,8 +174,8 @@ class ttc(object):
 
         return stddata
 
-    def sdavgmap(self, sdrange=[1, 2, 3], sdstep=1,
-                 title=' ', Verbose=False, Plot=True):
+    def sdavgmap(self, title=' ', Verbose=False, Plot=True,
+                 sdrange=[1, 2, 3], sdstep=1):
         # Creates a pcolormesh of the sd above average. This is computed by
         #   taking the average across frames, then finding the mean and std
         #   across pixels. The pixels that are above the mean, in steps
@@ -207,7 +212,7 @@ class ttc(object):
         for k in sdrange:
             for i in np.arange(len(detect[0, :])):
                 for j in np.arange(len(detect[:, 0])):
-                    if avgdat[j, i] > mean+k*std:
+                    if avgdat[j, i] > mean + k * std:
                         # This if statement controls what makes a detection,
                         # 	can also add other if statments to include other
                         # 	things like below standard deviation etc.
@@ -280,8 +285,8 @@ class ttc(object):
 
         return final
 
-    def rawmap(self, framelist=np.array([0]),
-               title=' ', Verbose=False, Plot=True):
+    def rawmap(self, title=' ', Verbose=False, Plot=True,
+               framelist=np.array([0])):
         # Creates arrays of raw frames and plots them
         # Returns a list of raw 2x2 numpy arrays correctly shaped
         #
@@ -380,7 +385,8 @@ class ttc(object):
         for i in range(2):
             for j in range(2):
                 final += np.roll(raw, (-1)**i, axis=j)
-                final += np.roll(np.roll(raw, (-1)**i, axis=0), (-1)**j, axis=1)
+                final += np.roll(np.roll(raw, (-1)**i, axis=0),
+                                        (-1)**j, axis=1)
 
         final = (final + raw)
         # This adds the value of each pixel to the 8 around it
@@ -434,8 +440,8 @@ class ttc(object):
 
                 dis = (np.where(maxima[i] == True))  # List of remaining maxima
                 try:
-                    distances[i] = ((dis[0][0]-dis[0][1])**2 +
-                                    (dis[1][0]-dis[1][1])**2)**(0.5)
+                    distances[i] = (((dis[0][0]-dis[0][1])**2 +
+                                    (dis[1][0]-dis[1][1])**2)**(0.5))
                     maxframes.append(maxima[i])
                 except:
                     pass
@@ -461,7 +467,8 @@ class ttc(object):
         # Helps distinguish between row and column cuts
 
         inpt = line.split()
-        if (((len(inpt) == 2) and (inpt[0] in guide)) and (type(inpt[1] == int))):
+        if (((len(inpt) == 2) and (inpt[0] in guide))
+           and (type(inpt[1] == int))):
             coord = inpt[0]
             num = abs(int(inpt[1]))
             if (num < guide[coord]):
@@ -553,12 +560,15 @@ class ttc(object):
         return final
 
     def circleSeek(self):  # call openCV2 library to analyze array for circles
+        '''
         imageArr = []
         for i in range(self.frames):
             imageArr.append(Image.fromarray(self.shapedat[i], 'L'))
             # forms B/W Image from given array, and appends it to a new array
             # requires 'L' mode as second parameter for B/W
         imageArr[45].save("out.png")
+        '''
+        # matplotlib.pyplot.pcolor usage could be image gen alternative
         return
 ###############################################################################
 ###############################################################################
