@@ -560,6 +560,7 @@ class ttc(object):
         return final
 
     def circleSeek(self):  # call openCV2 library to analyze array for circles
+
         '''
         imageArr = []
         for i in range(self.frames):

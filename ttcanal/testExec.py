@@ -6,6 +6,8 @@ def __main__():
     fName = "./5-29_calib_01.TXT"
     arr1 = ttcanal.ttc(fName)
     arr1.getframes()
+    arr1.circleSeek()
+    '''
     arr1.animate(title='animateTest')
     arr1.sdmap(title='sdTest', Plot=False)
     arr1.sdavgmap(title='sdavgTest', Plot=False)
@@ -18,6 +20,7 @@ def __main__():
     # arr1.line_cut(title='lineTest')
     arr1.plot_bin(5)
     arr1.fourier2D()
+    '''
 
     return
 
